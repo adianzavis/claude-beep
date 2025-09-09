@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.62.tar.gz"
-  sha256 "e9d959f698c47cd405f09f497f481d4c649a4c80470fd8c1bfc45c1faf99cd36"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.63.tar.gz"
+  sha256 "PLACEHOLDER_SHA"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -61,13 +61,56 @@ class Beep < Formula
     claude_wrapper_path = "#{HOMEBREW_PREFIX}/bin/claude"
     
     if File.exist?(claude_wrapper_path)
-      # Check if it's our wrapper by looking for claude-beep in the content
-      content = File.read(claude_wrapper_path) rescue ""
-      if content.include?("claude-beep")
-        File.delete(claude_wrapper_path)
-        puts "✅ Claude wrapper removed"
+      begin
+        # Check if it's our wrapper by looking for claude-beep in the content
+        content = File.read(claude_wrapper_path)
+        if content.include?("claude-beep")
+          File.delete(claude_wrapper_path)
+          puts "✅ Claude wrapper removed from #{claude_wrapper_path}"
+        else
+          puts "ℹ️  Claude wrapper exists but wasn't created by beep package - leaving it unchanged"
+        end
+      rescue => e
+        puts "⚠️  Could not read claude wrapper: #{e.message}"
+        # Try to remove it anyway if it looks like our wrapper
+        if File.executable?(claude_wrapper_path) && File.size(claude_wrapper_path) < 200
+          File.delete(claude_wrapper_path)
+          puts "✅ Claude wrapper removed (forced)"
+        end
+      end
+    else
+      puts "ℹ️  No claude wrapper found at #{claude_wrapper_path}"
+    end
+  end
+
+  def post_uninstall
+    # Additional cleanup after uninstall
+    claude_wrapper_path = "#{HOMEBREW_PREFIX}/bin/claude"
+    config_dir = "#{Dir.home}/.config/claude-beep"
+    
+    # Remove claude wrapper if it still exists and points to our beep
+    if File.exist?(claude_wrapper_path)
+      begin
+        content = File.read(claude_wrapper_path)
+        if content.include?("claude-beep")
+          File.delete(claude_wrapper_path)
+          puts "✅ Claude wrapper cleaned up in post_uninstall"
+        end
+      rescue
+        # Silently try to clean up
       end
     end
+    
+    puts <<~EOS
+      🧹 Uninstall complete!
+      
+      Optional cleanup:
+        rm -rf ~/.config/claude-beep/    # Remove config files
+        
+      If claude command still doesn't work, you may need to:
+        which claude                      # Find where claude is located
+        hash -r                          # Clear command hash cache
+    EOS
   end
 
   test do

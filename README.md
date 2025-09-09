@@ -1,33 +1,82 @@
-# claude-beep
+# 🔊 claude-beep
 
 Simple macOS beep commands for monitoring Claude CLI and playing notification sounds.
 
-## Installation
+## 📦 Installation
 
 Install using Homebrew:
-
 ```bash
+# Add the tap and install the package
+brew tap adianzavis/claude-beep https://github.com/adianzavis/claude-beep
 brew install adianzavis/claude-beep/beep
 ```
 
-This will install the following commands:
-- `claude-beep` - Monitor Claude CLI and beep on prompts
-- `claude-beep-simple` - Simple version 
-- `beep-disturb` - Play disturbing/alert sounds
-- `beep-success` - Play success sounds
+This will automatically:
+✅ **Install beep commands** - `beep-disturb`, `beep-success`, `claude-beep`  
+✅ **Replace `claude` command** - Your `claude` command now includes beep notifications  
+✅ **Install sound files** - Various notification sounds to choose from  
+✅ **Create config directory** - `~/.config/claude-beep/` for user settings  
 
-## Usage
+## 🚀 Usage
 
-### Monitor Claude CLI
+### 🤖 Automatic Claude Integration
+After installation, just use Claude normally:
 ```bash
-claude-beep chat
-claude-beep code
+claude          # Interactive Claude with beep notifications
+claude chat     # Also works with beep notifications  
+claude code     # Also works with beep notifications
 ```
 
-The `claude-beep` command will monitor your Claude CLI session and play alert sounds when Claude asks "Do you want to proceed?" or shows file change prompts.
+The beep notifications will trigger when Claude shows:
+- "Do you want to proceed?"
+- "Opened changes in"  
+- " ❯ 1. Yes  "
 
-### Manual beeping
+### 🎯 Direct Wrapper Usage
 ```bash
-beep-disturb    # Play alert sound
-beep-success    # Play success sound
+claude-beep chat    # Direct wrapper usage
+claude-beep code    # Also available
 ```
+
+### 🔔 Manual beeping
+```bash
+beep-disturb        # Play alert sound
+beep-success        # Play success sound
+beep-disturb -s     # 🎵 Select alert sound interactively
+beep-success -s     # 🎵 Select success sound interactively
+```
+
+## ⚙️ Configuration
+
+Sounds are configured using config files in `~/.config/claude-beep/`:
+
+```bash
+# Set disturb sound manually
+echo "/opt/homebrew/Cellar/beep/1.0.62/bin/disturb-sounds/bmw.aac" > ~/.config/claude-beep/.beep_disturb_config
+
+# Set success sound manually  
+echo "/opt/homebrew/Cellar/beep/1.0.62/bin/success-sounds/laugh.aac" > ~/.config/claude-beep/.beep_success_config
+```
+
+Available sounds are in:
+- Disturb sounds: `/opt/homebrew/Cellar/beep/*/bin/disturb-sounds/`
+- Success sounds: `/opt/homebrew/Cellar/beep/*/bin/success-sounds/`
+
+## 🗑️ Uninstallation
+
+```bash
+# Uninstall the package (this automatically removes the claude wrapper)
+brew uninstall adianzavis/claude-beep/beep
+
+# Remove tap (optional)
+brew untap adianzavis/claude-beep
+
+# Remove config files (optional)
+rm -rf ~/.config/claude-beep/
+
+# If claude command still doesn't work after uninstall:
+which claude                # Check where claude is located
+hash -r                    # Clear command hash cache
+```
+
+The uninstall process automatically removes the `claude` wrapper that was created during installation. If you encounter issues with the `claude` command after uninstalling, use the troubleshooting commands above.
