@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.71.tar.gz"
-  sha256 "5a3d382b8bac02f4d67494a2dcb06215d211088e7c3db1772721da3265259c23"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.72.tar.gz"
+  sha256 "PLACEHOLDER_SHA256_HASH"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -37,6 +37,29 @@ class Beep < Formula
     which_claude = `which claude 2>/dev/null`.strip
     homebrew_claude_active = which_claude == claude_wrapper_path
 
+    # Initialize default sound config if not set by user
+    begin
+      config_dir = File.join(Dir.home, ".config", "claude-beep")
+      disturb_cfg = File.join(config_dir, ".beep_disturb_config")
+      success_cfg = File.join(config_dir, ".beep_success_config")
+      default_disturb_name = "scratch.aac"
+      default_success_name = "basic.aac"
+      default_disturb_path = File.join(bin, "disturb-sounds", default_disturb_name)
+      default_success_path = File.join(bin, "success-sounds", default_success_name)
+
+      Dir.mkdir(config_dir) unless Dir.exist?(config_dir)
+
+      if File.exist?(default_disturb_path) && (!File.exist?(disturb_cfg) || File.zero?(disturb_cfg))
+        File.write(disturb_cfg, default_disturb_name)
+      end
+
+      if File.exist?(default_success_path) && (!File.exist?(success_cfg) || File.zero?(success_cfg))
+        File.write(success_cfg, default_success_name)
+      end
+    rescue => e
+      opoo "Could not initialize default beep configs: #{e.message}"
+    end
+
     if homebrew_claude_active
       puts <<~EOS
         ✅ Claude wrapper installed successfully!
@@ -45,7 +68,11 @@ class Beep < Formula
         - Wrapper active at: #{claude_wrapper_path}
         - Use 'claude-beep' directly if needed
 
-        Configure sounds with:
+        Defaults configured (if none existed):
+          Disturb: #{default_disturb_name} (in #{bin}/disturb-sounds)
+          Success: #{default_success_name} (in #{bin}/success-sounds)
+
+        Change sounds anytime with:
           beep-disturb --select    # Choose disturb sound
           beep-success --select    # Choose success sound
       EOS
@@ -63,7 +90,11 @@ class Beep < Formula
         Or use the wrapper directly:
           #{claude_wrapper_path} chat
 
-        Configure sounds with:
+        Defaults configured (if none existed):
+          Disturb: #{default_disturb_name} (in #{bin}/disturb-sounds)
+          Success: #{default_success_name} (in #{bin}/success-sounds)
+
+        Change sounds anytime with:
           beep-disturb --select    # Choose disturb sound
           beep-success --select    # Choose success sound
       EOS

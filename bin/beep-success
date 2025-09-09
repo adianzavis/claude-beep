@@ -97,7 +97,7 @@ select_sound() {
           echo "✅ Selected: System Beep for success"
         else
           # Custom sound file
-          echo "$SOUND_DIR/${menu_options[$selected]}" > "$CONFIG_FILE"
+          echo "${menu_options[$selected]}" > "$CONFIG_FILE"
           echo "✅ Selected: ${menu_options[$selected]} for success"
         fi
         return 0
@@ -154,6 +154,22 @@ fi
 # If no sound specified, try to load from config
 if [[ -z "$sound" && -f "$CONFIG_FILE" ]]; then
   sound="$(cat "$CONFIG_FILE" 2>/dev/null)"
+fi
+
+# Resolve configured value: support basenames and outdated absolute paths
+if [[ -n "$sound" ]]; then
+  if [[ "$sound" != /* ]]; then
+    # Basename -> resolve within SOUND_DIR
+    if [[ -r "$SOUND_DIR/$sound" ]]; then
+      sound="$SOUND_DIR/$sound"
+    fi
+  elif [[ ! -r "$sound" ]]; then
+    # Absolute but stale -> try basename in SOUND_DIR
+    base="$(basename -- "$sound")"
+    if [[ -r "$SOUND_DIR/$base" ]]; then
+      sound="$SOUND_DIR/$base"
+    fi
+  fi
 fi
 
 # Check if sound file exists and is readable (skip for system beep)

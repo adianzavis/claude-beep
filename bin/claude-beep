@@ -54,8 +54,9 @@ set original_claude $claude_path
 # Get command line arguments
 set claude_args [lrange $argv 0 end]
 
-# Variables to track beep timing
-set last_beep_time 0
+# Allow a beep once per prompt; re-arm after prompt disappears (debounced)
+set can_beep 1
+set rearm_timer ""
 
 # Start the original claude process with node
 spawn node $original_claude {*}$claude_args
@@ -65,15 +66,15 @@ set timeout -1
 
 # Make expect transparent - pass through all input/output
 interact {
-    -o -re "(Do you want to proceed\\?|Opened changes in| ❯ 1\\. Yes  )" {
-        # Only beep if it's been at least 10 seconds since last beep
-        set current_time [clock seconds]
-        if {$current_time >= [expr $last_beep_time + 10]} {
-            # Execute beep-disturb command
-            catch {
-                exec beep-disturb &
-            }
-            set last_beep_time $current_time
+    -o -re {(Do you want to (proceed\?|make [0-9]+ edits.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
+        if {$can_beep} {
+            catch { exec beep-disturb & }
+            set can_beep 0
         }
+        # Debounce: re-arm 1s after the last time we see the prompt pattern
+        if {[info exists rearm_timer] && $rearm_timer ne ""} {
+            after cancel $rearm_timer
+        }
+        set rearm_timer [after 1000 { set ::can_beep 1 }]
     }
 }

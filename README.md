@@ -62,6 +62,12 @@ Available sounds are in:
 - Disturb sounds: `/opt/homebrew/Cellar/beep/*/bin/disturb-sounds/`
 - Success sounds: `/opt/homebrew/Cellar/beep/*/bin/success-sounds/`
 
+Defaults
+- On first install, defaults are set if none exist:
+  - Disturb: `scratch.aac`
+  - Success: `basic.aac`
+  Update anytime with `beep-disturb --select` or `beep-success --select`.
+
 ## 🗑️ Uninstallation
 
 ```bash
