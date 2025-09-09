@@ -23,18 +23,23 @@ spawn node $original_claude {*}$claude_args
 set timeout -1
 
 # Watch output in background without affecting display
-expect_background -re {(Do you want to (proceed\?|make (this|[0-9]+) edit(s)?.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
-    if {$can_beep} {
-        catch { exec beep-disturb & }
-        set can_beep 0
+expect_background {
+    -re {(Do you want to (proceed\?|make (this|[0-9]+) edit(s)?.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
+        if {$can_beep} {
+            catch { exec beep-disturb & }
+            set can_beep 0
+        }
     }
+    eof { exit 0 }
 }
 
 # Transparent pass-through; re-arm strictly on Enter
-interact {
-    -input $user_spawn_id -re {\r} {
-        # Re-arm on user's Enter and pass it through
-        set can_beep 1
-        send -- $interact_out(0,string)
+catch {
+    interact {
+        -input $user_spawn_id -re {\r} {
+            # Re-arm on user's Enter and pass it through
+            set can_beep 1
+            catch { send -- $interact_out(0,string) }
+        }
     }
 }
