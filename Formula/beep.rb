@@ -14,8 +14,8 @@ class Beep < Formula
     bin.install "bin/claude-beep-simple"
     
     # Install sound directories and configs to bin directory
-    (bin/"disturb-sounds").install Dir["bin/disturb-sounds/*"]
-    (bin/"success-sounds").install Dir["bin/success-sounds/*"]
+    bin.install "bin/disturb-sounds"
+    bin.install "bin/success-sounds"
     bin.install "bin/.beep_disturb_config"
     bin.install "bin/.beep_success_config"
   end
