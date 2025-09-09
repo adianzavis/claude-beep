@@ -1,6 +1,11 @@
 #!/bin/zsh
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Resolve script location, following symlinks
+SCRIPT_PATH="$0"
+while [[ -L "$SCRIPT_PATH" ]]; do
+  SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 SOUND_DIR="$SCRIPT_DIR/disturb-sounds"
 CONFIG_FILE="$SCRIPT_DIR/.beep_disturb_config"
 
