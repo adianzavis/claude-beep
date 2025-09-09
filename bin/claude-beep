@@ -58,7 +58,11 @@ set claude_args [lrange $argv 0 end]
 set allow_beep 1
 
 # Start the original claude process with node
-spawn node $original_claude {*}$claude_args
+if {[llength $claude_args] > 0} {
+    spawn node $original_claude {*}$claude_args
+} else {
+    spawn node $original_claude
+}
 
 # Set timeout to never timeout
 set timeout -1
