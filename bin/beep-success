@@ -1,0 +1,159 @@
+#!/bin/zsh
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SOUND_DIR="$SCRIPT_DIR/success-sounds"
+CONFIG_FILE="$SCRIPT_DIR/.beep_success_config"
+
+select_sound() {
+  if [[ ! -d "$SOUND_DIR" ]]; then
+    echo "Sound directory not found: $SOUND_DIR" >&2
+    return 1
+  fi
+
+  # Get list of sound files and create final array
+  local menu_options=()
+  
+  # Start with System Beep
+  menu_options+=("System Beep")
+  
+  # Add all sound files found in directory
+  while IFS= read -r -d '' file; do
+    menu_options+=("$(basename "$file")")
+  done < <(find "$SOUND_DIR" -type f \( -name "*.mp3" -o -name "*.aac" -o -name "*.wav" -o -name "*.aiff" -o -name "*.m4a" \) -print0 | sort -z)
+
+  if [[ ${#menu_options[@]} -eq 1 ]]; then
+    echo "No sound files found in $SOUND_DIR (only system beep available)" >&2
+  fi
+
+  local selected=0
+  local total=${#menu_options[@]}
+
+  # Hide cursor and setup cleanup
+  printf '\e[?25l'
+  trap 'printf "\e[?25h\e[0m"' EXIT INT TERM
+
+  while true; do
+    # Clear screen and show header
+    printf '\e[2J\e[H'
+    echo "🔊 Select SUCCESS Beep Sound (↑↓ arrows / j/k, Space to preview, Enter to select, q to quit)"
+    echo "─────────────────────────────────────────────────────────────"
+    echo
+
+    # Show options
+    for ((i=0; i<total; i++)); do
+      if [[ $i -eq $selected ]]; then
+        printf '\e[7m→ %s\e[0m\n' "${menu_options[$i]}"
+      else
+        printf '  %s\n' "${menu_options[$i]}"
+      fi
+    done
+
+    # Read key input with proper terminal settings
+    read -k1 key 2>/dev/null
+    
+    case "$key" in
+      $'\e')  # Escape - read arrow key sequence
+        read -k2 key 2>/dev/null
+        case "$key" in
+          '[A') # Up arrow
+            ((selected > 0)) && ((selected--))
+            ;;
+          '[B') # Down arrow  
+            ((selected < total-1)) && ((selected++))
+            ;;
+        esac
+        ;;
+      ' ') # Space - Preview sound
+        if [[ "${menu_options[$selected]}" == "System Beep" ]]; then
+          # System Beep
+          /usr/bin/osascript -e 'beep 1' >/dev/null 2>&1
+        else
+          # Custom sound file
+          local preview_file="$SOUND_DIR/${menu_options[$selected]}"
+          if command -v afplay >/dev/null 2>&1 && [[ -r "$preview_file" ]]; then
+            afplay "$preview_file" >/dev/null 2>&1 &
+          fi
+        fi
+        ;;
+      $'\n'|$'\r') # Enter - Select sound
+        printf '\e[?25h\e[0m\e[2J\e[H'
+        if [[ "${menu_options[$selected]}" == "System Beep" ]]; then
+          # System Beep - save empty string
+          echo "" > "$CONFIG_FILE"
+          echo "✅ Selected: System Beep for success"
+        else
+          # Custom sound file
+          echo "$SOUND_DIR/${menu_options[$selected]}" > "$CONFIG_FILE"
+          echo "✅ Selected: ${menu_options[$selected]} for success"
+        fi
+        return 0
+        ;;
+      'j') # Vim-style down
+        ((selected < total-1)) && ((selected++))
+        ;;
+      'k') # Vim-style up
+        ((selected > 0)) && ((selected--))
+        ;;
+      'q'|'Q'|$'\x03') # q, Q, or Ctrl-C
+        printf '\e[?25h\e[0m\e[2J\e[H'
+        echo "Selection cancelled."
+        return 1
+        ;;
+    esac
+  done
+}
+
+# Parse arguments
+show_select=false
+count=1
+interval=0.15
+sound=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --select|-s)
+      show_select=true
+      shift
+      ;;
+    *)
+      # Numeric arguments for count and interval
+      if [[ "$1" =~ ^[0-9]+$ ]] && [[ -z "$count_set" ]]; then
+        count="$1"
+        count_set=true
+      elif [[ "$1" =~ ^[0-9]*\.?[0-9]+$ ]] && [[ -z "$interval_set" ]]; then
+        interval="$1"
+        interval_set=true
+      else
+        sound="$1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Handle selection interface
+if [[ "$show_select" == true ]]; then
+  select_sound
+  exit $?
+fi
+
+# If no sound specified, try to load from config
+if [[ -z "$sound" && -f "$CONFIG_FILE" ]]; then
+  sound="$(cat "$CONFIG_FILE" 2>/dev/null)"
+fi
+
+# Check if sound file exists and is readable (skip for system beep)
+if [[ -n "$sound" && ! -r "$sound" ]]; then
+  echo "Warning: Sound file '$sound' not found or not readable. Using system beep." >&2
+  sound=""
+fi
+
+# Play the beep(s)
+for ((i=0; i<count; i++)); do
+  if command -v afplay >/dev/null 2>&1 && [[ -n "$sound" ]]; then
+    afplay "$sound" >/dev/null 2>&1 &
+  else
+    /usr/bin/osascript -e 'beep 1' >/dev/null 2>&1
+  fi
+  sleep "$interval"
+done

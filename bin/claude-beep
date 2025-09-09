@@ -1,0 +1,40 @@
+#!/usr/bin/expect -f
+
+# claude-beep - Monitor claude command and beep on "Do you want to proceed?"
+
+# Use system beep-disturb command
+
+# Get command line arguments (everything after this script name)
+set claude_args [lrange $argv 0 end]
+
+# If no arguments provided, show usage
+if {[llength $claude_args] == 0} {
+    puts "Usage: claude-beep \[claude command arguments\]"
+    puts "Example: claude-beep chat"
+    puts "         claude-beep code"
+    exit 1
+}
+
+# Variables to track beep timing
+set last_beep_time 0
+
+# Start the claude process
+spawn claude {*}$claude_args
+
+# Set timeout to never timeout
+set timeout -1
+
+# Make expect transparent - pass through all input/output
+interact {
+    -o -re "(Do you want to proceed\\?|Opened changes in| ❯ 1\\. Yes  )" {
+        # Only beep if it's been at least 10 seconds since last beep
+        set current_time [clock seconds]
+        if {$current_time >= [expr $last_beep_time + 10]} {
+            # Execute beep-disturb command
+            catch {
+                exec beep-disturb &
+            }
+            set last_beep_time $current_time
+        }
+    }
+}
