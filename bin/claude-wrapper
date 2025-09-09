@@ -23,7 +23,7 @@ spawn node $original_claude {*}$claude_args
 set timeout -1
 
 # Watch output in background without affecting display
-expect_background -re {(Do you want to (proceed\?|make [0-9]+ edits.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
+expect_background -re {(Do you want to (proceed\?|make (this|[0-9]+) edit(s)?.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
     if {$can_beep} {
         catch { exec beep-disturb & }
         set can_beep 0
