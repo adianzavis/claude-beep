@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.60.tar.gz"
-  sha256 "f077fcb2db26703fe22813c793b9dae1974509f0801259ecce4c9883f2146c42"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.61.tar.gz"
+  sha256 "PLACEHOLDER_HASH"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -13,11 +13,11 @@ class Beep < Formula
     bin.install "bin/claude-beep"
     bin.install "bin/claude-beep-simple"
     
-    # Install sound directories and configs to bin directory
+    # Install sound directories to bin directory
     bin.install "bin/disturb-sounds"
     bin.install "bin/success-sounds"
-    bin.install "bin/.beep_disturb_config"
-    bin.install "bin/.beep_success_config"
+    
+    # Config files are now created dynamically in ~/.config/claude-beep/
   end
 
   def post_install

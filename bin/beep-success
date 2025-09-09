@@ -10,7 +10,13 @@ while [[ -L "$SCRIPT_PATH" ]]; do
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 SOUND_DIR="$SCRIPT_DIR/success-sounds"
-CONFIG_FILE="$SCRIPT_DIR/.beep_success_config"
+
+# Use writable config directory in user's home
+CONFIG_DIR="$HOME/.config/claude-beep"
+CONFIG_FILE="$CONFIG_DIR/.beep_success_config"
+
+# Create config directory if it doesn't exist
+mkdir -p "$CONFIG_DIR"
 
 select_sound() {
   if [[ ! -d "$SOUND_DIR" ]]; then
