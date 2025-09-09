@@ -24,7 +24,7 @@ set timeout -1
 
 # Make expect transparent - pass through all input/output
 interact {
-    -o -re "(Do you want to proceed\\?|Opened changes in| ❯ 1\\. Yes  )" {
+    -o -re "(Do you want to proceed\\?|Opened changes in| 1\\. Yes  )" {
         # Only beep if it's been at least 10 seconds since last beep
         set current_time [clock seconds]
         if {$current_time >= [expr $last_beep_time + 10]} {
