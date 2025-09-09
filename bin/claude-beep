@@ -54,8 +54,8 @@ set original_claude $claude_path
 # Get command line arguments
 set claude_args [lrange $argv 0 end]
 
-# Variables to track beep timing
-set last_beep_time 0
+# Variables to track beep state
+set allow_beep 1
 
 # Start the original claude process with node
 spawn node $original_claude {*}$claude_args
@@ -65,15 +65,18 @@ set timeout -1
 
 # Make expect transparent - pass through all input/output
 interact {
-    -o -re "(Do you want to proceed\\?|Opened changes in| ❯ 1\\. Yes  )" {
-        # Only beep if it's been at least 10 seconds since last beep
-        set current_time [clock seconds]
-        if {$current_time >= [expr $last_beep_time + 10]} {
+    -o -re "(Do you want to proceed|Opened changes in|❯)" {
+        # Only beep if beeping is allowed
+        if {$allow_beep == 1} {
             # Execute beep-disturb command
             catch {
                 exec beep-disturb &
             }
-            set last_beep_time $current_time
+            set allow_beep 0
         }
+    }
+    -i -re "\r" {
+        # User pressed Enter - re-enable beeping for next prompt
+        set allow_beep 1
     }
 }
