@@ -2,7 +2,7 @@ class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
   url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.59.tar.gz"
-  sha256 "PLACEHOLDER_HASH"
+  sha256 "42f4d109bfce40bc645feba9b5506477ebb50f51f4c45af64dc142cc347cb08d"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
