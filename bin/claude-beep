@@ -2,8 +2,54 @@
 
 # Simple expect wrapper that replaces claude command
 
-# Path to the original claude (Node.js version)
-set original_claude "/Users/adrian/.nvm/versions/node/v22.12.0/lib/node_modules/@anthropic-ai/claude-code/cli.js"
+# Find the original claude CLI dynamically
+set claude_path ""
+
+# First try nvm locations specifically (most common for Claude Code)
+set nvm_dir "$env(HOME)/.nvm"
+if {[file exists $nvm_dir]} {
+    foreach version_dir [glob -nocomplain "$nvm_dir/versions/node/*/lib/node_modules/@anthropic-ai/claude-code/cli.js"] {
+        if {[file exists $version_dir]} {
+            set claude_path $version_dir
+            break
+        }
+    }
+}
+
+# If nvm didn't work, try to find claude in PATH and resolve symlinks
+if {$claude_path == ""} {
+    foreach path [split [exec printenv PATH 2>/dev/null] :] {
+        set claude_candidate "$path/claude"
+        if {[file exists $claude_candidate]} {
+            # Skip our own wrapper
+            if {$path == "/opt/homebrew/bin"} {
+                continue
+            }
+            
+            # Check if it's a symlink and resolve it
+            while {[file type $claude_candidate] == "link"} {
+                set claude_candidate [file readlink $claude_candidate]
+                # Handle relative symlinks
+                if {![string match "/*" $claude_candidate]} {
+                    set claude_candidate "$path/$claude_candidate"
+                }
+            }
+            
+            # Check if it's a Node.js file (contains shebang or is large)
+            if {[file exists $claude_candidate] && [file readable $claude_candidate]} {
+                set claude_path $claude_candidate
+                break
+            }
+        }
+    }
+}
+
+if {$claude_path == ""} {
+    puts stderr "Error: Could not find original claude CLI"
+    exit 1
+}
+
+set original_claude $claude_path
 
 # Get command line arguments
 set claude_args [lrange $argv 0 end]
