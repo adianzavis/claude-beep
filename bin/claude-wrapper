@@ -13,9 +13,8 @@ if {[llength $claude_args] == 0} {
     set claude_args [list "--help"]
 }
 
-# Allow a beep once per prompt; re-arm after prompt disappears (debounced)
+# Allow a beep once per prompt; re-arm only on user Enter
 set can_beep 1
-set rearm_timer ""
 
 # Start the original claude process with node
 spawn node $original_claude {*}$claude_args
@@ -23,17 +22,19 @@ spawn node $original_claude {*}$claude_args
 # Set timeout to never timeout
 set timeout -1
 
-# Make expect transparent - pass through all input/output
+# Watch output in background without affecting display
+expect_background -re {(Do you want to (proceed\?|make [0-9]+ edits.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
+    if {$can_beep} {
+        catch { exec beep-disturb & }
+        set can_beep 0
+    }
+}
+
+# Transparent pass-through; re-arm strictly on Enter
 interact {
-    -o -re {(Do you want to (proceed\?|make [0-9]+ edits.*\?)|Opened changes in|[[:space:]]*[❯> ]?[[:space:]]*1\.[[:space:]]*Yes([[:space:]]|$))} {
-        if {$can_beep} {
-            catch { exec beep-disturb & }
-            set can_beep 0
-        }
-        # Debounce: re-arm 1s after the last time we see the prompt pattern
-        if {[info exists rearm_timer] && $rearm_timer ne ""} {
-            after cancel $rearm_timer
-        }
-        set rearm_timer [after 1000 { set ::can_beep 1 }]
+    -re {\r} {
+        # Re-arm on user's Enter and pass it through
+        set can_beep 1
+        send -- $interact_out(0,string)
     }
 }

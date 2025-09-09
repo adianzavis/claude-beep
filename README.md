@@ -2,6 +2,10 @@
 
 Simple macOS beep commands for monitoring Claude CLI and playing notification sounds.
 
+## 👋 Greetings
+
+Welcome to claude-beep! This tool enhances your Claude CLI experience with audio notifications, so you'll never miss important prompts or responses again. Whether you're working in the background or multitasking, claude-beep keeps you informed with customizable sound alerts.
+
 ## 📦 Installation
 
 Install using Homebrew:

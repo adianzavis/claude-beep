@@ -1,5 +1,59 @@
 # Claude.md - Development Notes
 
+## Update Version Tutorial
+
+Use these generic steps to cut a new release. Replace placeholders like `vX.Y.Z` with your target version.
+
+1) Prep changes
+- Verify working tree is clean and tests pass
+- Capture notable changes for the release notes (optional)
+
+2) Update Homebrew formula
+- Edit `Formula/beep.rb`
+  - Set `url` to `https://github.com/adianzavis/claude-beep/archive/refs/tags/vX.Y.Z.tar.gz`
+  - Temporarily set `sha256` to a placeholder (any 64 hex chars) or leave old value
+
+3) Commit changes
+```bash
+git add .
+git commit -m "Release vX.Y.Z"
+```
+
+4) Tag and push
+```bash
+git tag vX.Y.Z
+git push origin main
+git push origin vX.Y.Z
+```
+
+5) Calculate SHA256 for the tag tarball
+```bash
+curl -L https://github.com/adianzavis/claude-beep/archive/refs/tags/vX.Y.Z.tar.gz | shasum -a 256
+# Copy the 64‑char hash
+```
+
+6) Update formula with real hash and finalize
+```bash
+# Edit Formula/beep.rb -> set sha256 "<PASTE_HASH>"
+git add Formula/beep.rb
+git commit -m "Update sha256 for vX.Y.Z"
+git push origin main
+```
+
+7) Verify locally (optional)
+```bash
+brew update
+brew upgrade adianzavis/claude-beep/beep
+```
+
+Notes
+- Follow semver for version bumps
+- Ensure the tag exists before computing SHA
+- If a tag already exists, delete and recreate it before publishing
+- Keep defaults and install messages current in `Formula/beep.rb`
+
+---
+
 ## How to Release a New Version (Step by Step Process)
 
 ### Overview
