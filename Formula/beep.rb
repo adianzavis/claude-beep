@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.56.tar.gz"
-  sha256 "400adc3c4d1b77071f5ede404d8205a2202106f3347ad2dd910e837fb9681b3c"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.57.tar.gz"
+  sha256 "PLACEHOLDER_HASH"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -28,11 +28,17 @@ class Beep < Formula
       # Backup original claude if not already done
       original_claude = "#{claude_path}-original"
       if !File.exist?(original_claude)
-        system "sudo", "mv", claude_path, original_claude
+        system "cp", claude_path, original_claude
       end
       
-      # Create symlink to claude-beep
-      system "sudo", "ln", "-sf", "#{bin}/claude-beep", claude_path
+      # Create wrapper script that calls claude-beep
+      claude_wrapper = <<~SCRIPT
+        #!/bin/bash
+        exec "#{bin}/claude-beep" "$@"
+      SCRIPT
+      
+      File.write(claude_path, claude_wrapper)
+      system "chmod", "+x", claude_path
       
       puts <<~EOS
         ✅ Claude wrapper installed successfully!
@@ -67,8 +73,8 @@ class Beep < Formula
     original_claude = "#{claude_path}-original"
     
     if !claude_path.empty? && File.exist?(original_claude)
-      system "sudo", "rm", "-f", claude_path
-      system "sudo", "mv", original_claude, claude_path
+      system "cp", original_claude, claude_path
+      system "rm", "-f", original_claude
       puts "✅ Original claude command restored"
     end
   end

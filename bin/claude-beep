@@ -18,8 +18,29 @@ if {[llength $claude_args] == 0} {
 # Variables to track beep timing
 set last_beep_time 0
 
-# Start the claude process
-spawn claude {*}$claude_args
+# Find the original claude command (look for backup first, then try common locations)
+set original_claude ""
+set claude_locations [list \
+    "[exec which claude]-original" \
+    "/Users/adrian/.nvm/versions/node/v22.12.0/bin/claude-original" \
+    "/opt/homebrew/bin/claude-original" \
+    "/usr/local/bin/claude" \
+]
+
+foreach location $claude_locations {
+    if {[file executable $location]} {
+        set original_claude $location
+        break
+    }
+}
+
+if {$original_claude == ""} {
+    puts stderr "Error: Could not find original claude command"
+    exit 1
+}
+
+# Start the original claude process
+spawn {*}[split $original_claude] {*}$claude_args
 
 # Set timeout to never timeout
 set timeout -1
