@@ -8,10 +8,19 @@ class Beep < Formula
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
 
   def install
-    bin.install "bin/beep"
+    bin.install "bin/beep-disturb"
+    bin.install "bin/beep-success"
+    bin.install "bin/claude-beep"
+    bin.install "bin/claude-beep-simple"
+    
+    # Install sound directories and configs
+    prefix.install "bin/disturb-sounds"
+    prefix.install "bin/success-sounds"
+    prefix.install "bin/.beep_disturb_config"
+    prefix.install "bin/.beep_success_config"
   end
 
   test do
-    system "#{bin}/beep", "1"
+    system "#{bin}/claude-beep", "1"
   end
 end
