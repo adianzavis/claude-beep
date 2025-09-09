@@ -73,7 +73,7 @@ expect_background -re {(Do you want to (proceed\?|make (this|[0-9]+) edit(s)?.*\
 
 # Transparent pass-through; re-arm strictly on Enter
 interact {
-    -re {\r} {
+    -input $user_spawn_id -re {\r} {
         # Re-arm on user's Enter and pass it through
         set can_beep 1
         send -- $interact_out(0,string)
