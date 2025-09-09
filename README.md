@@ -74,13 +74,13 @@ Defaults
 ```bash
 # Uninstall the package (this automatically removes the claude wrapper)
 brew uninstall adianzavis/claude-beep/beep
+rm /opt/homebrew/bin/claude
 
 # Remove tap (optional)
 brew untap adianzavis/claude-beep
 
 # Remove config files (optional)
 rm -rf ~/.config/claude-beep/
-rm /opt/homebrew/bin/claude
 
 # If claude command still doesn't work after uninstall:
 which claude                # Check where claude is located

@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.1.1.tar.gz"
-  sha256 "782b169f9ba73010f731d8d34c25b5f421614b76f49fd60cef56a389d2d358aa"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.1.2.tar.gz"
+  sha256 "PLACEHOLDER_SHA256_HASH"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -160,56 +160,7 @@ class Beep < Formula
       end
     end
 
-    # Remove a user-defined zsh function wrapper if it targets claude-beep
-    begin
-      zshrc = File.expand_path("~/.zshrc")
-      if File.exist?(zshrc) && File.writable?(zshrc)
-        lines = File.readlines(zshrc, chomp: false)
-        cleaned = []
-        i = 0
-        removed = false
-        backup_written = false
-
-        while i < lines.length
-          if lines[i] =~ /^\s*claude\s*\(\)\s*\{\s*$/
-            j = i + 1
-            end_idx = nil
-            while j < lines.length
-              if lines[j] =~ /^\s*\}\s*$/
-                end_idx = j
-                break
-              end
-              j += 1
-            end
-
-            if end_idx
-              block = lines[i..end_idx].join
-              if block.include?("/opt/homebrew/bin/claude-beep")
-                # Backup original once
-                unless backup_written
-                  backup = zshrc + ".bak.claude-beep-#{Time.now.strftime('%Y%m%d%H%M%S')}"
-                  File.write(backup, lines.join)
-                  backup_written = true
-                end
-                removed = true
-                i = end_idx + 1
-                next
-              end
-            end
-          end
-
-          cleaned << lines[i]
-          i += 1
-        end
-
-        if removed
-          File.write(zshrc, cleaned.join)
-          puts "✅ Removed 'claude' function from #{zshrc}"
-        end
-      end
-    rescue => e
-      opoo "Could not update ~/.zshrc: #{e.message}"
-    end
+    # Intentionally do not modify user shell rc files here
 
     puts <<~EOS
       🧹 Uninstall complete!
