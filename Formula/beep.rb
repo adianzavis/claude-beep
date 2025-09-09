@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.1.0.tar.gz"
-  sha256 "82a6b3263c4e1c2524df9705699391ac470c25de7154a932bf7b9fd49de9a19d"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.1.1.tar.gz"
+  sha256 "PLACEHOLDER_SHA256_HASH"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -133,17 +133,82 @@ class Beep < Formula
     claude_wrapper_path = "#{HOMEBREW_PREFIX}/bin/claude"
     config_dir = "#{Dir.home}/.config/claude-beep"
 
-    # Remove claude wrapper if it still exists and points to our beep
+    # Remove claude wrapper if it still exists and appears to be our shim
     if File.exist?(claude_wrapper_path)
       begin
-        content = File.read(claude_wrapper_path)
-        if content.include?("claude-beep")
+        content = File.read(claude_wrapper_path, 1024)
+        if content.include?("claude-beep") || content.match?(/exec .*claude-beep/)
           File.delete(claude_wrapper_path)
           puts "✅ Claude wrapper cleaned up in post_uninstall"
+        elsif File.size(claude_wrapper_path) < 512
+          first = (content.lines.first || "")
+          if first.start_with?("#!") && content.include?("exec ")
+            File.delete(claude_wrapper_path)
+            puts "✅ Removed shim at #{claude_wrapper_path}"
+          end
         end
-      rescue
-        # Silently try to clean up
+      rescue => e
+        # Fallback: force remove tiny files
+        begin
+          if File.size(claude_wrapper_path) < 512
+            File.delete(claude_wrapper_path)
+            puts "✅ Removed shim in post_uninstall (forced)"
+          end
+        rescue
+          # ignore
+        end
       end
+    end
+
+    # Remove a user-defined zsh function wrapper if it targets claude-beep
+    begin
+      zshrc = File.expand_path("~/.zshrc")
+      if File.exist?(zshrc) && File.writable?(zshrc)
+        lines = File.readlines(zshrc, chomp: false)
+        cleaned = []
+        i = 0
+        removed = false
+        backup_written = false
+
+        while i < lines.length
+          if lines[i] =~ /^\s*claude\s*\(\)\s*\{\s*$/
+            j = i + 1
+            end_idx = nil
+            while j < lines.length
+              if lines[j] =~ /^\s*\}\s*$/
+                end_idx = j
+                break
+              end
+              j += 1
+            end
+
+            if end_idx
+              block = lines[i..end_idx].join
+              if block.include?("/opt/homebrew/bin/claude-beep")
+                # Backup original once
+                unless backup_written
+                  backup = zshrc + ".bak.claude-beep-#{Time.now.strftime('%Y%m%d%H%M%S')}"
+                  File.write(backup, lines.join)
+                  backup_written = true
+                end
+                removed = true
+                i = end_idx + 1
+                next
+              end
+            end
+          end
+
+          cleaned << lines[i]
+          i += 1
+        end
+
+        if removed
+          File.write(zshrc, cleaned.join)
+          puts "✅ Removed 'claude' function from #{zshrc}"
+        end
+      end
+    rescue => e
+      opoo "Could not update ~/.zshrc: #{e.message}"
     end
 
     puts <<~EOS
@@ -152,9 +217,15 @@ class Beep < Formula
       Optional cleanup:
         rm -rf ~/.config/claude-beep/    # Remove config files
 
-      If claude command still doesn't work, you may need to:
-        which claude                      # Find where claude is located
-        hash -r                          # Clear command hash cache
+      If `claude` still resolves to a shell function/alias in your session:
+        type -a claude                   # See how your shell resolves it
+        unfunction claude               # zsh: remove function in current session
+        unset -f claude                 # bash: remove function in current session
+        unalias claude                  # if it's an alias
+        hash -r                         # Clear command hash cache
+
+      If you added a persistent wrapper manually, remove it from your shell rc files
+      (e.g. ~/.zshrc, ~/.zprofile, ~/.zshenv, ~/.bashrc, ~/.bash_profile, ~/.profile).
     EOS
   end
 

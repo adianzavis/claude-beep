@@ -80,6 +80,7 @@ brew untap adianzavis/claude-beep
 
 # Remove config files (optional)
 rm -rf ~/.config/claude-beep/
+rm /opt/homebrew/bin/claude
 
 # If claude command still doesn't work after uninstall:
 which claude                # Check where claude is located
