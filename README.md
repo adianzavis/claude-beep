@@ -52,10 +52,10 @@ Sounds are configured using config files in `~/.config/claude-beep/`:
 
 ```bash
 # Set disturb sound manually
-echo "/opt/homebrew/Cellar/beep/1.0.62/bin/disturb-sounds/bmw.aac" > ~/.config/claude-beep/.beep_disturb_config
+echo "/opt/homebrew/Cellar/beep/1.0.64/bin/disturb-sounds/bmw.aac" > ~/.config/claude-beep/.beep_disturb_config
 
 # Set success sound manually  
-echo "/opt/homebrew/Cellar/beep/1.0.62/bin/success-sounds/laugh.aac" > ~/.config/claude-beep/.beep_success_config
+echo "/opt/homebrew/Cellar/beep/1.0.64/bin/success-sounds/laugh.aac" > ~/.config/claude-beep/.beep_success_config
 ```
 
 Available sounds are in:
