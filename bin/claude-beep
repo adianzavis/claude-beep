@@ -8,11 +8,6 @@ set original_claude "/Users/adrian/.nvm/versions/node/v22.12.0/lib/node_modules/
 # Get command line arguments
 set claude_args [lrange $argv 0 end]
 
-# If no arguments provided, add default argument to avoid Node.js confusion
-if {[llength $claude_args] == 0} {
-    set claude_args [list "--help"]
-}
-
 # Variables to track beep timing
 set last_beep_time 0
 
