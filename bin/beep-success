@@ -3,7 +3,10 @@
 # Resolve script location, following symlinks
 SCRIPT_PATH="$0"
 while [[ -L "$SCRIPT_PATH" ]]; do
+  DIR="$(dirname "$SCRIPT_PATH")"
   SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+  # Handle relative symlinks
+  [[ "$SCRIPT_PATH" != /* ]] && SCRIPT_PATH="$DIR/$SCRIPT_PATH"
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 SOUND_DIR="$SCRIPT_DIR/success-sounds"
