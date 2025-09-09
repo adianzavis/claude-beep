@@ -1,8 +1,8 @@
 class Beep < Formula
   desc "Simple macOS beep command"
   homepage "https://github.com/adianzavis/claude-beep"
-  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.58.tar.gz"
-  sha256 "b43c37f19655381da0abbb4055432678ffec5dc9f7c0b84a079640bac061bc7d"
+  url "https://github.com/adianzavis/claude-beep/archive/refs/tags/v1.0.59.tar.gz"
+  sha256 "PLACEHOLDER_HASH"
   license "MIT"
 
   head "https://github.com/adianzavis/claude-beep.git", branch: "main"
@@ -21,32 +21,26 @@ class Beep < Formula
   end
 
   def post_install
-    # Check if claude command exists
-    claude_path = `which claude 2>/dev/null`.strip
+    # Create claude wrapper in homebrew bin (which comes first in PATH)
+    claude_wrapper_path = "#{HOMEBREW_PREFIX}/bin/claude"
     
-    if !claude_path.empty?
-      # Backup original claude if not already done
-      original_claude = "#{claude_path}-original"
-      if !File.exist?(original_claude)
-        system "cp", claude_path, original_claude
-      end
-      
-      # Create wrapper script that calls claude-beep
+    # Only create if it doesn't already exist
+    if !File.exist?(claude_wrapper_path)
       claude_wrapper = <<~SCRIPT
         #!/bin/bash
         exec "#{bin}/claude-beep" "$@"
       SCRIPT
       
-      File.write(claude_path, claude_wrapper)
-      system "chmod", "+x", claude_path
+      File.write(claude_wrapper_path, claude_wrapper)
+      system "chmod", "+x", claude_wrapper_path
       
       puts <<~EOS
         ✅ Claude wrapper installed successfully!
         
         The 'claude' command now automatically includes beep notifications.
-        - Original claude command backed up as: #{original_claude}
+        - Wrapper created at: #{claude_wrapper_path}
+        - Original claude preserved at its original location
         - Use 'claude-beep' directly if needed
-        - Use '#{original_claude}' to bypass beep notifications
         
         Configure sounds with:
           beep-disturb --select    # Choose disturb sound
@@ -54,28 +48,25 @@ class Beep < Formula
       EOS
     else
       puts <<~EOS
-        ⚠️  Claude command not found in PATH.
+        ℹ️  Claude wrapper already exists at #{claude_wrapper_path}
         
-        Beep commands installed:
-          claude-beep   # Wrapper for claude with beep notifications
-          beep-disturb  # Disturb beep sound
-          beep-success  # Success beep sound
-          
-        To set up claude wrapper manually:
-          alias claude='claude-beep'
+        Your claude command already has beep notifications enabled.
+        Use 'claude-beep' directly if needed.
       EOS
     end
   end
 
   def pre_uninstall
-    # Restore original claude command if it exists
-    claude_path = `which claude 2>/dev/null`.strip
-    original_claude = "#{claude_path}-original"
+    # Remove claude wrapper if it exists and was created by us
+    claude_wrapper_path = "#{HOMEBREW_PREFIX}/bin/claude"
     
-    if !claude_path.empty? && File.exist?(original_claude)
-      system "cp", original_claude, claude_path
-      system "rm", "-f", original_claude
-      puts "✅ Original claude command restored"
+    if File.exist?(claude_wrapper_path)
+      # Check if it's our wrapper by looking for claude-beep in the content
+      content = File.read(claude_wrapper_path) rescue ""
+      if content.include?("claude-beep")
+        File.delete(claude_wrapper_path)
+        puts "✅ Claude wrapper removed"
+      end
     end
   end
 
