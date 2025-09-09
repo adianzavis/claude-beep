@@ -13,11 +13,11 @@ class Beep < Formula
     bin.install "bin/claude-beep"
     bin.install "bin/claude-beep-simple"
     
-    # Install sound directories and configs
-    prefix.install "bin/disturb-sounds"
-    prefix.install "bin/success-sounds"
-    prefix.install "bin/.beep_disturb_config"
-    prefix.install "bin/.beep_success_config"
+    # Install sound directories and configs to bin directory
+    (bin/"disturb-sounds").install Dir["bin/disturb-sounds/*"]
+    (bin/"success-sounds").install Dir["bin/success-sounds/*"]
+    bin.install "bin/.beep_disturb_config"
+    bin.install "bin/.beep_success_config"
   end
 
   test do
