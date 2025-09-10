@@ -20,8 +20,15 @@ This will automatically:
 
 ### 🤖 Claude Code Integration
 Set up beep notifications for Claude Code:
+1. Go to your project root
+2. Run command
 ```bash
 claude-beep-init    # Add beep hooks to Claude Code settings
+```
+3. (Optional) select sound for disturb and success beep
+```
+beep-disturb -s
+beep-success -s
 ```
 
 This configures Claude Code to automatically play:
