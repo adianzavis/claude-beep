@@ -51,6 +51,8 @@ Use interactive sound selection:
 beep-disturb --select    # Choose from available disturb sounds
 beep-success --select    # Choose from available success sounds
 ```
+Press [space] to play the sound in selection
+Press [enter] to select sound
 
 ### 🔧 Manual Configuration
 Sounds are configured using config files in `~/.config/claude-beep/`:
