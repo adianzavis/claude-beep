@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# claude-beep-init - Initialize Claude Code hooks for beep notifications
+
+CLAUDE_SETTINGS_FILE="$HOME/.claude/settings.local.json"
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: claude-beep-init [OPTIONS]
+
+Initialize Claude Code hooks for beep notifications.
+
+OPTIONS:
+    -h, --help     Show this help message
+    -f, --force    Overwrite existing hooks configuration
+    --remove       Remove beep hooks from configuration
+
+DESCRIPTION:
+    This command adds beep notification hooks to your Claude Code settings:
+    - Success beep on "Stop" events 
+    - Disturb beep on "Notification" events
+
+    The hooks are added to: $CLAUDE_SETTINGS_FILE
+
+EOF
+}
+
+# Function to create backup
+create_backup() {
+    local file="$1"
+    local backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    if cp "$file" "$backup"; then
+        echo "✅ Backup created: $backup"
+        return 0
+    else
+        echo "❌ Failed to create backup"
+        return 1
+    fi
+}
+
+# Function to check if hooks already exist
+hooks_exist() {
+    local file="$1"
+    if [[ -f "$file" ]]; then
+        # Use jq if available for proper JSON parsing
+        if command -v jq >/dev/null 2>&1; then
+            # Check if hooks section exists and contains our specific beep commands
+            if jq -e '.hooks.Stop[]?.hooks[]? | select(.type == "command" and .command == "beep-success")' "$file" >/dev/null 2>&1 && \
+               jq -e '.hooks.Notification[]?.hooks[]? | select(.type == "command" and .command == "beep-disturb")' "$file" >/dev/null 2>&1; then
+                return 0
+            fi
+        else
+            # Fallback: More specific grep patterns to avoid false positives
+            if grep -q '"hooks"' "$file" && \
+               grep -A 15 '"Stop"' "$file" | grep -q '"command".*"beep-success"' && \
+               grep -A 15 '"Notification"' "$file" | grep -q '"command".*"beep-disturb"'; then
+                return 0
+            fi
+        fi
+    fi
+    return 1
+}
+
+# Function to remove beep hooks
+remove_hooks() {
+    local file="$1"
+    
+    if [[ ! -f "$file" ]]; then
+        echo "❌ Settings file not found: $file"
+        return 1
+    fi
+    
+    # Create backup
+    create_backup "$file" || return 1
+    
+    # Use jq to remove the beep hooks
+    if command -v jq >/dev/null 2>&1; then
+        # Remove Stop and Notification hooks if they contain beep commands
+        local temp_file=$(mktemp)
+        jq 'del(.hooks.Stop[] | select(.hooks[]?.command == "beep-success")) | 
+            del(.hooks.Notification[] | select(.hooks[]?.command == "beep-disturb"))' \
+            "$file" > "$temp_file" && mv "$temp_file" "$file"
+        echo "✅ Beep hooks removed from Claude settings"
+    else
+        echo "❌ jq not found. Please install jq to remove hooks automatically"
+        echo "   Or manually edit: $file"
+        return 1
+    fi
+}
+
+# Function to add hooks to existing JSON
+add_hooks() {
+    local file="$1"
+    local force="$2"
+    
+    # Create .claude directory if it doesn't exist
+    local claude_dir="$(dirname "$file")"
+    if [[ ! -d "$claude_dir" ]]; then
+        echo "📁 Creating directory: $claude_dir"
+        mkdir -p "$claude_dir"
+    fi
+    
+    # Check if hooks already exist
+    if hooks_exist "$file" && [[ "$force" != "true" ]]; then
+        echo "⚠️  Beep hooks already exist in Claude settings"
+        echo "   Use --force to overwrite existing configuration"
+        return 1
+    fi
+    
+    # Create backup if file exists
+    if [[ -f "$file" ]]; then
+        create_backup "$file" || return 1
+    fi
+    
+    # Create or update the settings file
+    if [[ -f "$file" ]] && command -v jq >/dev/null 2>&1; then
+        # Use jq to merge hooks into existing JSON
+        local temp_file=$(mktemp)
+        jq '.hooks.Stop = [{"hooks": [{"type": "command", "command": "beep-success"}]}] |
+            .hooks.Notification = [{"hooks": [{"type": "command", "command": "beep-disturb"}]}]' \
+            "$file" > "$temp_file" && mv "$temp_file" "$file"
+    else
+        # Create new settings file with hooks
+        cat > "$file" << 'EOF'
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "beep-success"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "beep-disturb"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+    fi
+    
+    echo "✅ Beep hooks added to Claude settings!"
+    echo "   Settings file: $file"
+    echo ""
+    echo "🔊 Configured notifications:"
+    echo "   • Success beep on task completion (Stop events)"
+    echo "   • Disturb beep on notifications"
+}
+
+# Parse command line arguments
+FORCE=false
+REMOVE=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -f|--force)
+            FORCE=true
+            shift
+            ;;
+        --remove)
+            REMOVE=true
+            shift
+            ;;
+        *)
+            echo "❌ Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# Main execution
+if [[ "$REMOVE" == "true" ]]; then
+    echo "🗑️  Removing beep hooks from Claude settings..."
+    remove_hooks "$CLAUDE_SETTINGS_FILE"
+else
+    echo "🔧 Initializing Claude beep hooks..."
+    add_hooks "$CLAUDE_SETTINGS_FILE" "$FORCE"
+fi
