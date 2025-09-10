@@ -11,6 +11,7 @@ class Beep < Formula
     bin.install "bin/beep-disturb"
     bin.install "bin/beep-success"
     bin.install "bin/claude-beep-init"
+    bin.install "bin/claude-beep-remove"
 
     # Install sound directories to bin directory
     bin.install "bin/disturb-sounds"
@@ -50,6 +51,7 @@ class Beep < Formula
         beep-disturb         # Play disturb sound
         beep-success         # Play success sound
         claude-beep-init     # Initialize Claude Code hooks
+        claude-beep-remove   # Remove Claude Code hooks
 
       Defaults configured (if none existed):
         Disturb: #{default_disturb_name} (in #{bin}/disturb-sounds)
@@ -57,6 +59,7 @@ class Beep < Formula
 
       Setup Claude Code integration:
         claude-beep-init     # Add beep hooks to Claude settings
+        claude-beep-remove   # Remove beep hooks from settings
 
       Change sounds anytime with:
         beep-disturb --select    # Choose disturb sound

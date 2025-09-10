@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{\n  \"permissions\": {\n    \"allow\": [\n      \"Bash(/Users/adrian/Server/claude-beep/bin/beep:*)\",\n      \"Bash(timeout:*)\",\n      \"Bash(chmod:*)\",\n      \"Bash(/Users/adrian/Server/claude-beep/test_args.sh:*)\",\n      \"Bash(cat:*)\",\n      \"Bash(python3:*)\",\n      \"Bash(find:*)\",\n      \"Bash(git add:*)\",\n      \"Bash(git commit:*)\",\n      \"Bash(git tag:*)\",\n      \"Bash(git push:*)\",\n      \"Read(//opt/homebrew/Cellar/beep/1.0.53/bin/success-sounds/**)\"\n    ],\n    \"deny\": [],\n    \"ask\": []\n  }\n}"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/homebrew/bin/beep-success"
+          }
+        ]
+      }
+    ]
+  }
+}

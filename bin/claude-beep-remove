@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# claude-beep-remove - Remove Claude Code beep hooks
+
+PROJECT_SETTINGS="./.claude/settings.local.json"
+HOME_SETTINGS="${HOME}/.claude/settings.local.json"
+
+# Check for local project settings first, then fall back to global
+if [[ -d ".git" ]] || [[ -f "package.json" ]] || [[ -f "pyproject.toml" ]] || [[ -f "Cargo.toml" ]] || [[ -d ".claude" ]] || [[ -f "$PROJECT_SETTINGS" ]]; then
+  SETTINGS_FILE="$PROJECT_SETTINGS"
+  SCOPE="project"
+else
+  SETTINGS_FILE="$HOME_SETTINGS"
+  SCOPE="global"
+fi
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: claude-beep-remove [OPTIONS]
+
+Remove Claude Code beep hooks from settings.
+
+OPTIONS:
+    -h, --help     Show this help message
+    --dry-run      Show what would be removed without making changes
+
+DESCRIPTION:
+    This command removes beep notification hooks from your Claude Code settings:
+    - Removes beep-success hooks from "Stop" events 
+    - Removes beep-disturb hooks from "Notification" events
+
+    Other hooks are preserved - only beep-* commands are removed.
+
+    Settings file: $SETTINGS_FILE ($SCOPE)
+
+EOF
+}
+
+# Function to check if beep hooks exist
+beep_hooks_exist() {
+    local file="$1"
+    if [[ ! -f "$file" ]]; then
+        return 1
+    fi
+    
+    if command -v jq >/dev/null 2>&1; then
+        # Check if beep-success exists in Stop hooks
+        local has_stop=$(jq -r '.hooks.Stop[]?.hooks[]? | select(.type == "command" and (.command | startswith("beep-"))) | .command' "$file" 2>/dev/null | head -1)
+        # Check if beep-disturb exists in Notification hooks  
+        local has_notification=$(jq -r '.hooks.Notification[]?.hooks[]? | select(.type == "command" and (.command | startswith("beep-"))) | .command' "$file" 2>/dev/null | head -1)
+        
+        if [[ -n "$has_stop" || -n "$has_notification" ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Function to show what would be removed
+show_beep_hooks() {
+    local file="$1"
+    if [[ ! -f "$file" ]]; then
+        echo "❌ Settings file not found: $file"
+        return 1
+    fi
+    
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "❌ jq not found. Please install jq to use this command."
+        return 1
+    fi
+    
+    echo "🔍 Beep hooks found in $file:"
+    echo
+    
+    # Show beep hooks in Stop
+    local stop_hooks=$(jq -r '.hooks.Stop[]?.hooks[]? | select(.type == "command" and (.command | startswith("beep-"))) | .command' "$file" 2>/dev/null)
+    if [[ -n "$stop_hooks" ]]; then
+        echo "📌 Stop hooks to be removed:"
+        echo "$stop_hooks" | sed 's/^/  - /'
+    fi
+    
+    # Show beep hooks in Notification
+    local notification_hooks=$(jq -r '.hooks.Notification[]?.hooks[]? | select(.type == "command" and (.command | startswith("beep-"))) | .command' "$file" 2>/dev/null)
+    if [[ -n "$notification_hooks" ]]; then
+        echo "📌 Notification hooks to be removed:"
+        echo "$notification_hooks" | sed 's/^/  - /'
+    fi
+    
+    if [[ -z "$stop_hooks" && -z "$notification_hooks" ]]; then
+        echo "✅ No beep hooks found"
+        return 1
+    fi
+    echo
+}
+
+# Function to remove beep hooks
+remove_beep_hooks() {
+    local file="$1"
+    local dry_run="$2"
+    
+    if [[ ! -f "$file" ]]; then
+        echo "❌ Settings file not found: $file"
+        return 1
+    fi
+    
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "❌ jq not found. Please install jq to remove hooks automatically"
+        return 1
+    fi
+    
+    # Show what will be removed
+    if ! show_beep_hooks "$file"; then
+        echo "✅ No beep hooks to remove"
+        return 0
+    fi
+    
+    if [[ "$dry_run" == "true" ]]; then
+        echo "🔍 Dry run - no changes made"
+        return 0
+    fi
+    
+    
+    # Use jq to remove beep hooks while preserving everything else
+    local temp_file=$(mktemp)
+    jq '
+        # Remove beep-* commands from Stop hooks
+        .hooks.Stop = (.hooks.Stop // [] | map(
+            if .hooks then 
+                .hooks = (.hooks | map(select(.type != "command" or (.command | startswith("beep-") | not))))
+            else . end |
+            # Remove empty hook objects
+            if (.hooks | length) == 0 then empty else . end
+        )) |
+        # Remove beep-* commands from Notification hooks  
+        .hooks.Notification = (.hooks.Notification // [] | map(
+            if .hooks then
+                .hooks = (.hooks | map(select(.type != "command" or (.command | startswith("beep-") | not))))
+            else . end |
+            # Remove empty hook objects
+            if (.hooks | length) == 0 then empty else . end
+        )) |
+        # Clean up empty arrays
+        if (.hooks.Stop | length) == 0 then .hooks.Stop = [] else . end |
+        if (.hooks.Notification | length) == 0 then .hooks.Notification = [] else . end
+    ' "$file" > "$temp_file" && mv "$temp_file" "$file"
+    
+    echo "✅ Beep hooks removed from Claude settings"
+    echo "   Settings file: $file ($SCOPE)"
+    echo
+    echo "🔕 Removed beep notifications:"
+    echo "   • beep-success removed from Stop events"
+    echo "   • beep-disturb removed from Notification events"
+    echo "   • Other hooks preserved"
+}
+
+# Parse command line arguments
+DRY_RUN=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        *)
+            echo "❌ Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# Main execution
+if ! beep_hooks_exist "$SETTINGS_FILE"; then
+    echo "✅ No beep hooks found in Claude settings"
+    echo "   Settings file: $SETTINGS_FILE ($SCOPE)"
+    exit 0
+fi
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    echo "🔍 Dry run - showing what would be removed..."
+    echo "   Settings file: $SETTINGS_FILE ($SCOPE)"
+    echo
+else
+    echo "🗑️  Removing beep hooks from Claude settings..."
+    echo "   Settings file: $SETTINGS_FILE ($SCOPE)"
+    echo
+fi
+
+remove_beep_hooks "$SETTINGS_FILE" "$DRY_RUN"
